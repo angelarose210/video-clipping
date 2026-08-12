@@ -60,6 +60,17 @@ def main() -> int:
     has_whisper = module_available("whisper")
     has_yolo = module_available("ultralytics")
 
+    # Node is only needed for captions and overlays. shell=True on Windows
+    # because `node` resolves through a .cmd shim that bare exec misses.
+    node_version = None
+    if shutil.which("node"):
+        completed = subprocess.run(
+            ["node", "--version"], capture_output=True, text=True, check=False,
+            shell=sys.platform == "win32",
+        )
+        if completed.returncode == 0:
+            node_version = completed.stdout.strip() or None
+
     cuda = False
     cuda_device = None
     if module_available("torch"):
@@ -84,6 +95,7 @@ def main() -> int:
             "openai-whisper": has_whisper,
             "opencv-python": has_cv2,
             "ultralytics": has_yolo,
+            "node": node_version,
             "cuda": cuda,
             "cudaDevice": cuda_device,
         },
@@ -96,6 +108,7 @@ def main() -> int:
         "reframe-sampled": has_cv2,
         "reframe-tracked": has_cv2,
         "quality-check": bool(ffmpeg and ffprobe),
+        "captions-and-overlays": bool(node_version),
     }
     report["capabilities"] = capabilities
 
@@ -123,6 +136,12 @@ def main() -> int:
             "what": "ultralytics",
             "unlocks": "the most accurate subject detector; the bundled OpenCV detectors work without it",
             "install": "pip install ultralytics",
+        })
+    if not node_version:
+        missing.append({
+            "what": "Node.js 18+",
+            "unlocks": "captions and overlays via scaffold_remotion.py; plain vertical cuts need nothing",
+            "install": "https://nodejs.org  |  winget install OpenJS.NodeJS  |  brew install node",
         })
     report["missing"] = missing
 

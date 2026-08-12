@@ -80,14 +80,17 @@ If you do have CUDA and PyTorch installed, pass `--device cuda` to `transcribe.p
 
 Only needed for captions, overlays, or zoom cuts. Skip it for plain vertical cuts — `materialize` already produces those.
 
-Needs Node.js 18+.
+Needs Node.js 18+. The scaffold writes the project and its `package.json`, so `npm install` pulls what it needs:
 
 ```powershell
+py scripts/scaffold_remotion.py scaffold --project 'clips\01-your-clip' --caption-style word
 cd 'clips\01-your-clip'
-npx create-video@latest remotion --blank
-cd remotion
-npx remotion add @remotion/captions
+npm install
+npx tsc --noEmit
+npm run render
 ```
+
+`--caption-style cue` skips the `@remotion/captions` dependency and generates sentence-shaped cues from the transcript instead.
 
 Full detail in [remotion-editing.md](references/remotion-editing.md).
 

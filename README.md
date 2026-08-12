@@ -11,6 +11,7 @@ Most clipping tools hand you timestamps and leave the work to you. This one tran
 - **Reframes without a GPU.** The default tier detects the subject on a few frames per second and interpolates between them. On a 4K test clip that ran in 13–19 s against 143 s for per-frame tracking, and the two crop paths differed by a mean of 4.3 px. An RTX 3060 saved 4 s of those 143 — decoding dominates, not inference.
 - **Degrades instead of failing.** Detectors fall back YOLO → OpenCV HOG → OpenCV Haar → frame centre, and the manifest reports the confidence it actually achieved rather than pretending.
 - **Checks its own output.** Local ffmpeg checks for dimensions, decode integrity, silent audio, loudness and true peak, black frames, frozen stretches, and cut boundaries that land mid-syllable.
+- **Scaffolds captions that render.** One command writes a Remotion project from the clip contract — right fps, right dimensions, captions timed to the clip's own transcript. Two styles: per-word highlight, or sentence-shaped cues with no extra dependency.
 - **Stops and asks when it should.** A crop plan is never auto-approved. An automatic reframe that quietly cuts off a head is worse than one that waits for a human.
 
 ## Quick Start
@@ -30,6 +31,13 @@ python3 scripts/clipping_pipeline.py windows --request shorts-run/SHORTS_REQUEST
 python3 scripts/clipping_pipeline.py rank --request shorts-run/SHORTS_REQUEST.json --candidates shorts-run/analysis/candidates.raw.json
 python3 scripts/clipping_pipeline.py materialize --run-root shorts-run
 python3 scripts/qc.py --stage source --video shorts-run/clips/01-a1b2c3/public/videos/source.mp4 --contract shorts-run/clips/01-a1b2c3/CLIP_CONTRACT.json
+```
+
+Captions and overlays, when a plain cut is not the deliverable:
+
+```bash
+python3 scripts/scaffold_remotion.py scaffold --project shorts-run/clips/01-a1b2c3 --caption-style word
+cd shorts-run/clips/01-a1b2c3 && npm install && npx tsc --noEmit && npm run render
 ```
 
 ## Example
@@ -78,6 +86,8 @@ pip install opencv-python     # subject-aware reframing + two detectors
 pip install ultralytics       # optional: adds the YOLO detector
 ```
 
+Captions and overlays additionally need **Node.js 18+**. Plain vertical cuts do not.
+
 Full detail, including per-platform ffmpeg commands and troubleshooting, is in `INSTALL.md` inside any format folder.
 
 ### Hermes
@@ -104,13 +114,13 @@ For an always-loaded condensed version, also copy `claude/.claude/rules/video-cl
 python3 -m pytest tests -q
 ```
 
-71 tests covering ranking, materialization, contracts, reframing, QC, and transcription. Tests needing ffmpeg skip themselves when it is absent, so a partial install still gives a useful signal.
+97 tests covering ranking, materialization, contracts, reframing, QC, transcription, and the Remotion scaffold. Tests needing ffmpeg skip themselves when it is absent, so a partial install still gives a useful signal.
 
 ## Not Included
 
 **Visual description.** The scoring contract accepts visual evidence, but nothing here generates it. Selection works from the transcript, which is enough for talking-head and instructional footage. Bring your own vision model if you want visual signals.
 
-**Caption styling.** The Remotion reference covers the correctness rules that break renders, not a caption design. Bring your own typography.
+**A caption design.** The scaffold writes working captions in two styles, but deliberately plain ones: a system font stack, white text, one highlight colour. No brand, no motion design, no end card. Typography and palette are yours.
 
 **Publishing.** No upload, no scheduling, no platform API. The skill delivers files.
 

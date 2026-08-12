@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.1.0
+
+### Added
+
+- `scripts/scaffold_remotion.py` - writes a Remotion project into a materialized
+  clip that renders on the first try. Composition settings come from
+  `CLIP_CONTRACT.json`; captions come from the clip's own rebased transcript.
+  Two caption styles, both verified end to end at 1080x1920: `word` uses
+  `@remotion/captions` for a per-word highlight, and `cue` generates
+  sentence-shaped cues into `src/cues.json` with no extra dependency. The `cues`
+  subcommand regenerates them after a transcript edit.
+- 26 tests covering cue grouping, template substitution, and the CLI.
+- `preflight.py` now reports Node.js and a `captions-and-overlays` capability.
+
+### Changed
+
+- `references/remotion-editing.md` had the project layout wrong. It showed
+  Remotion nested in a `remotion/` subdirectory, which puts `public/` out of
+  `staticFile()`'s reach and fails every asset path. The scaffold and the
+  document now both put `package.json` and `src/` at the clip root, beside
+  `public/`.
+- Three production rules added, each from a defect caught in a real render: a
+  missing `fontFamily` silently falls back to a serif; a hook card repeating the
+  opening spoken line prints those words twice; a card and the first caption page
+  overlap unless captions are gated behind it.
+
 ## 1.0.0 - first public release
 
 Runs with Python 3.10+ and ffmpeg. Nothing else is required, no GPU is needed

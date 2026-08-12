@@ -40,7 +40,13 @@ py scripts/preflight.py --source 'C:\path\long.mp4'
 
 6. **Reframe** only when a fixed centre crop would lose the subject or action. Read [reframing.md](references/reframing.md). The default tier samples a few frames per second and needs no GPU. Target selection stays a human decision when more than one person is plausibly the subject.
 
-7. **Edit** in Remotion when a clip needs captions, overlays, or zoom cuts. Read [remotion-editing.md](references/remotion-editing.md). Skip this when a plain vertical cut is the deliverable — `materialize` already produced one.
+7. **Edit** in Remotion when a clip needs captions, overlays, or zoom cuts. Skip this when a plain vertical cut is the deliverable — `materialize` already produced one.
+
+   ```powershell
+   py scripts/scaffold_remotion.py scaffold --project 'clips-abc' --caption-style word
+   ```
+
+   That writes a project that renders as-is, with fps, dimensions, and duration from the contract and captions from the clip's transcript. `--caption-style cue` generates sentence-shaped cues instead and drops the `@remotion/captions` dependency. Read [remotion-editing.md](references/remotion-editing.md) before changing it, and check a still before a full render.
 
 8. **Check every clip.** Read [quality-check.md](references/quality-check.md).
 
@@ -78,6 +84,13 @@ py scripts/reframe.py approve --manifest 'C:\path\clip-reframe\reframe.manifest.
 py scripts/reframe.py publish --manifest 'C:\path\clip-reframe\reframe.manifest.json' --project 'C:\path\clips\01-abc' --id hero
 ```
 
+Captions and overlays, when a plain cut is not the deliverable:
+
+```powershell
+py scripts/scaffold_remotion.py scaffold --project 'C:\path\clips\01-abc' --caption-style word
+py scripts/scaffold_remotion.py cues --project 'C:\path\clips\01-abc'
+```
+
 On macOS and Linux use `python3` in place of `py`, and forward slashes.
 
 ## Rules
@@ -96,7 +109,7 @@ Deliberate gaps, so you know where the skill stops:
 
 **Visual description.** The scoring contract accepts visual evidence — "emphatic gesture at 00:43" — but nothing here generates it. Selection works from the transcript alone, which is enough for talking-head and instructional footage. If you want visual signals, describe the footage yourself or plug in your own vision model and pass the timestamps as evidence strings.
 
-**Caption styling.** [remotion-editing.md](references/remotion-editing.md) covers the correctness rules that break renders. It does not ship a caption design. Bring your own typography.
+**A caption design.** `scaffold_remotion.py` writes working captions in two styles, but deliberately plain ones: a system font stack, white text, one highlight colour. No brand, no motion design, no end card. Typography and palette are yours.
 
 **Publishing.** No upload, no scheduling, no platform API. The skill delivers files.
 

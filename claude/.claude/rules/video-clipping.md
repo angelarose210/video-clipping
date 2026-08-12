@@ -38,6 +38,12 @@ py .claude/skills/video-clipping/scripts/preflight.py --source 'C:\path\long.mp4
 
 7. **Edit** in Remotion only when the clip needs captions, overlays, or zoom cuts. A plain vertical cut already exists after step 5.
 
+   ```powershell
+   py .claude/skills/video-clipping/scripts/scaffold_remotion.py scaffold --project 'clips\01-abc' --caption-style word
+   ```
+
+   Writes a project that renders as-is: fps, dimensions, and duration from the contract, captions from the clip's transcript. Use `--caption-style cue` for sentence-shaped cues with no `@remotion/captions` dependency. Render one still before a full render.
+
 8. **Check every clip.**
 
    ```powershell
