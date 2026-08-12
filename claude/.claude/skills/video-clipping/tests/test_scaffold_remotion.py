@@ -120,6 +120,33 @@ class TemplateTests(unittest.TestCase):
         for template in (scaffold.CAPTIONS_WORD_TSX, scaffold.CAPTIONS_CUE_TSX):
             self.assertIn("showFromFrame", template)
 
+    def test_the_highlight_timebase_survives_the_gate(self) -> None:
+        """The active-word highlight must key off the Sequence's real start.
+
+        The hook gate can clamp a page to start later than it was spoken. Keying
+        the highlight off page.startMs then runs it behind by exactly the amount
+        the gate held it back -- in a real render the highlight sat on word 6
+        while word 9 was being spoken.
+        """
+        template = scaffold.CAPTIONS_WORD_TSX
+        self.assertNotIn("page.startMs + (frame / fps)", template)
+        self.assertIn("fromFrame", template)
+        self.assertIn("fromFrame={visibleStart}", template)
+
+    def test_a_word_page_is_not_capped_at_the_grouping_window(self) -> None:
+        """SWITCH_MS groups tokens; it is not how long a page may stay up.
+
+        createTikTokStyleCaptions puts words on one page when they fall within
+        SWITCH_MS OF EACH OTHER, so a four-word page spans well over one window.
+        Capping duration at SWITCH_MS blanked the last page of a real render
+        while its words were still being spoken.
+        """
+        template = scaffold.CAPTIONS_WORD_TSX
+        self.assertNotIn("start + Math.round((SWITCH_MS / 1000) * fps)", template)
+        # The page must instead end from its own last spoken token.
+        self.assertIn("page.tokens[page.tokens.length - 1]", template)
+        self.assertIn("lastToken?.toMs", template)
+
     def test_word_style_depends_on_the_captions_package(self) -> None:
         self.assertIn("@remotion/captions", scaffold.PACKAGE_JSON_WORD)
 

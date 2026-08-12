@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.1.1
+
+### Fixed
+
+Two word-style caption defects, both found by reading a rendered still rather
+than by a test:
+
+- A caption page was capped at `SWITCH_MS`, the grouping window. That constant
+  controls which words land on the same page, not how long a page may stay up,
+  so a four-word page spanning more than one window blanked while its own words
+  were still being spoken. A page now ends at its last spoken token plus a short
+  tail.
+- The active-word highlight keyed off `page.startMs`, which stops matching once
+  the hook gate clamps a page to start later than it was spoken. The highlight
+  ran behind by exactly the amount the gate held it back -- sitting on word 6
+  while word 9 was audible. It now derives from the Sequence's real start frame.
+
+Both are covered by tests that assert on the generated template, so neither can
+return silently.
+
 ## 1.1.0
 
 ### Added
@@ -12,7 +32,6 @@
   sentence-shaped cues into `src/cues.json` with no extra dependency. The `cues`
   subcommand regenerates them after a transcript edit.
 - 26 tests covering cue grouping, template substitution, and the CLI.
-- `preflight.py` now reports Node.js and a `captions-and-overlays` capability.
 
 ### Changed
 

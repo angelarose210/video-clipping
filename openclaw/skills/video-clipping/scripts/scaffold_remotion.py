@@ -261,8 +261,14 @@ import {Sequence, useCurrentFrame, useVideoConfig} from 'remotion';
 import transcript from '../public/transcript.json';
 import {CLIP} from './config';
 
-// How long one page of words stays up before the next replaces it.
+// Words within this many ms of each other land on the same page. Raise it for
+// fewer, fuller pages; lower it toward word-by-word. This is a grouping
+// window, not a duration -- a page stays up as long as its own words take.
 const SWITCH_MS = 1150;
+
+// How long the last word of a page lingers after it is spoken. Without a tail
+// the page cuts the instant speech stops, which reads as a flicker.
+const TAIL_FRAMES = (fps: number) => Math.round(0.35 * fps);
 
 type Word = {word: string; start: number; end: number};
 
@@ -279,11 +285,14 @@ const {pages} = createTikTokStyleCaptions({
   combineTokensWithinMilliseconds: SWITCH_MS,
 });
 
-const CaptionPage = ({page}: {page: TikTokPage}) => {
+const CaptionPage = ({page, fromFrame}: {page: TikTokPage; fromFrame: number}) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
-  // Sequence-local frame back to absolute transcript time.
-  const absoluteMs = page.startMs + (frame / fps) * 1000;
+  // Sequence-local frame back to absolute transcript time. Derive it from the
+  // Sequence's real start, NOT from page.startMs: the hook gate can clamp a
+  // page to start later than it was spoken, and page.startMs would then run
+  // the highlight behind by exactly the amount the gate held it back.
+  const absoluteMs = ((fromFrame + CLIP.sourceTrimFrames + frame) / fps) * 1000;
 
   return (
     <div
@@ -341,9 +350,14 @@ export const CaptionTrack = ({
         const naturalEnd = next
           ? Math.round((next.startMs / 1000) * fps) - CLIP.sourceTrimFrames
           : hideFromFrame;
-        // Half-open: [start, end). Cap each page so a long trailing pause does
-        // not leave the last words on screen.
-        const end = Math.min(hideFromFrame, naturalEnd, start + Math.round((SWITCH_MS / 1000) * fps));
+        // A page stays up until its own last word finishes, plus a short tail.
+        // SWITCH_MS is the grouping window, not a duration: createTikTokStyleCaptions
+        // groups tokens within SWITCH_MS OF EACH OTHER, so a page legitimately
+        // spans longer than one window. Capping at SWITCH_MS blanks the screen
+        // mid-page while those words are still being spoken.
+        const lastToken = page.tokens[page.tokens.length - 1];
+        const spokenEnd = Math.round(((lastToken?.toMs ?? page.startMs) / 1000) * fps) - CLIP.sourceTrimFrames;
+        const end = Math.min(hideFromFrame, naturalEnd, spokenEnd + TAIL_FRAMES(fps));
         // Clamp to the gate so a page that began under the hook card resumes
         // when the card clears instead of being dropped.
         const visibleStart = Math.max(start, showFromFrame);
@@ -355,7 +369,7 @@ export const CaptionTrack = ({
             durationInFrames={end - visibleStart}
             premountFor={Math.round(0.5 * fps)}
           >
-            <CaptionPage page={page} />
+            <CaptionPage page={page} fromFrame={visibleStart} />
           </Sequence>
         );
       })}
